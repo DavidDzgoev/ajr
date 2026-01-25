@@ -8,7 +8,7 @@ services:
   proxy:
     image: traefik:3.0
     volumes:
-      - /var/run/docker.sock:/var/run/docker.sock
+      - /var/run/docker.sock:/var/run/docker.sock:ro
     ports:
       - "80:80"
       - "8090:8080"
