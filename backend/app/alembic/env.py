@@ -1,8 +1,15 @@
-import os
+import sys
 from logging.config import fileConfig
+from pathlib import Path
 
 from alembic import context
 from sqlalchemy import engine_from_config, pool
+
+# Add the backend directory to Python path so we can import 'app'
+# This allows running alembic from the backend directory
+backend_dir = Path(__file__).resolve().parent.parent.parent
+if str(backend_dir) not in sys.path:
+    sys.path.insert(0, str(backend_dir))
 
 # this is the Alembic Config object, which provides
 # access to the values within the .ini file in use.
