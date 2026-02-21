@@ -3,22 +3,147 @@
 import type { CancelablePromise } from './core/CancelablePromise';
 import { OpenAPI } from './core/OpenAPI';
 import { request as __request } from './core/request';
-import type { ItemsReadItemsData, ItemsReadItemsResponse, ItemsCreateItemData, ItemsCreateItemResponse, ItemsReadItemData, ItemsReadItemResponse, ItemsUpdateItemData, ItemsUpdateItemResponse, ItemsDeleteItemData, ItemsDeleteItemResponse, LoginLoginAccessTokenData, LoginLoginAccessTokenResponse, LoginTestTokenResponse, LoginRecoverPasswordData, LoginRecoverPasswordResponse, LoginResetPasswordData, LoginResetPasswordResponse, LoginRecoverPasswordHtmlContentData, LoginRecoverPasswordHtmlContentResponse, PrivateCreateUserData, PrivateCreateUserResponse, UsersReadUsersData, UsersReadUsersResponse, UsersCreateUserData, UsersCreateUserResponse, UsersReadUserMeResponse, UsersDeleteUserMeResponse, UsersUpdateUserMeData, UsersUpdateUserMeResponse, UsersUpdatePasswordMeData, UsersUpdatePasswordMeResponse, UsersRegisterUserData, UsersRegisterUserResponse, UsersReadUserByIdData, UsersReadUserByIdResponse, UsersUpdateUserData, UsersUpdateUserResponse, UsersDeleteUserData, UsersDeleteUserResponse, UtilsTestEmailData, UtilsTestEmailResponse, UtilsHealthCheckResponse } from './types.gen';
+import type { CompetitionsReadCompetitionsData, CompetitionsReadCompetitionsResponse, CompetitionsReadCompetitionData, CompetitionsReadCompetitionResponse, CompetitionsReadCompetitionContestsData, CompetitionsReadCompetitionContestsResponse, ContestsReadContestsData, ContestsReadContestsResponse, ContestsReadContestData, ContestsReadContestResponse, CountriesReadCountriesData, CountriesReadCountriesResponse, CountriesReadCountryData, CountriesReadCountryResponse, JudokasReadJudokasData, JudokasReadJudokasResponse, JudokasReadJudokaData, JudokasReadJudokaResponse, JudokasReadJudokaContestsData, JudokasReadJudokaContestsResponse, JudokasReadJudokaRatingsData, JudokasReadJudokaRatingsResponse, LoginLoginAccessTokenData, LoginLoginAccessTokenResponse, LoginTestTokenResponse, LoginRecoverPasswordData, LoginRecoverPasswordResponse, LoginResetPasswordData, LoginResetPasswordResponse, LoginRecoverPasswordHtmlContentData, LoginRecoverPasswordHtmlContentResponse, RatingChangesReadRatingChangesData, RatingChangesReadRatingChangesResponse, RatingFormulasReadRatingFormulasData, RatingFormulasReadRatingFormulasResponse, RatingFormulasCreateRatingFormulaData, RatingFormulasCreateRatingFormulaResponse, RatingFormulasReadRatingFormulaData, RatingFormulasReadRatingFormulaResponse, RatingFormulasUpdateRatingFormulaData, RatingFormulasUpdateRatingFormulaResponse, RatingFormulasDeleteRatingFormulaData, RatingFormulasDeleteRatingFormulaResponse, RatingsReadRatingsData, RatingsReadRatingsResponse, RatingsReadLeaderboardData, RatingsReadLeaderboardResponse, RatingsReadJudokaRatingData, RatingsReadJudokaRatingResponse, RatingsReadRatingHistoryData, RatingsReadRatingHistoryResponse, SyncTriggerSyncResponse, SyncReadSyncHistoryData, SyncReadSyncHistoryResponse, SyncReadSyncData, SyncReadSyncResponse, UsersReadUsersData, UsersReadUsersResponse, UsersCreateUserData, UsersCreateUserResponse, UsersReadUserMeResponse, UsersDeleteUserMeResponse, UsersUpdateUserMeData, UsersUpdateUserMeResponse, UsersUpdatePasswordMeData, UsersUpdatePasswordMeResponse, UsersRegisterUserData, UsersRegisterUserResponse, UsersReadUserByIdData, UsersReadUserByIdResponse, UsersUpdateUserData, UsersUpdateUserResponse, UsersDeleteUserData, UsersDeleteUserResponse, UtilsTestEmailData, UtilsTestEmailResponse, UtilsHealthCheckResponse } from './types.gen';
 
-export class ItemsService {
+export class CompetitionsService {
     /**
-     * Read Items
-     * Retrieve items.
+     * Read Competitions
+     * Retrieve competitions.
      * @param data The data for the request.
      * @param data.skip
      * @param data.limit
-     * @returns ItemsPublic Successful Response
+     * @param data.idCountry
+     * @returns CompetitionsPublic Successful Response
      * @throws ApiError
      */
-    public static readItems(data: ItemsReadItemsData = {}): CancelablePromise<ItemsReadItemsResponse> {
+    public static readCompetitions(data: CompetitionsReadCompetitionsData = {}): CancelablePromise<CompetitionsReadCompetitionsResponse> {
         return __request(OpenAPI, {
             method: 'GET',
-            url: '/api/v1/items/',
+            url: '/api/v1/competitions/',
+            query: {
+                skip: data.skip,
+                limit: data.limit,
+                id_country: data.idCountry
+            },
+            errors: {
+                422: 'Validation Error'
+            }
+        });
+    }
+    
+    /**
+     * Read Competition
+     * Get a specific competition by id.
+     * @param data The data for the request.
+     * @param data.competitionId
+     * @returns CompetitionPublic Successful Response
+     * @throws ApiError
+     */
+    public static readCompetition(data: CompetitionsReadCompetitionData): CancelablePromise<CompetitionsReadCompetitionResponse> {
+        return __request(OpenAPI, {
+            method: 'GET',
+            url: '/api/v1/competitions/{competition_id}',
+            path: {
+                competition_id: data.competitionId
+            },
+            errors: {
+                422: 'Validation Error'
+            }
+        });
+    }
+    
+    /**
+     * Read Competition Contests
+     * Get contests for a specific competition.
+     * @param data The data for the request.
+     * @param data.competitionId
+     * @param data.skip
+     * @param data.limit
+     * @returns unknown Successful Response
+     * @throws ApiError
+     */
+    public static readCompetitionContests(data: CompetitionsReadCompetitionContestsData): CancelablePromise<CompetitionsReadCompetitionContestsResponse> {
+        return __request(OpenAPI, {
+            method: 'GET',
+            url: '/api/v1/competitions/{competition_id}/contests',
+            path: {
+                competition_id: data.competitionId
+            },
+            query: {
+                skip: data.skip,
+                limit: data.limit
+            },
+            errors: {
+                422: 'Validation Error'
+            }
+        });
+    }
+}
+
+export class ContestsService {
+    /**
+     * Read Contests
+     * Retrieve contests.
+     * @param data The data for the request.
+     * @param data.skip
+     * @param data.limit
+     * @param data.competitionId
+     * @param data.judokaId
+     * @returns ContestsPublic Successful Response
+     * @throws ApiError
+     */
+    public static readContests(data: ContestsReadContestsData = {}): CancelablePromise<ContestsReadContestsResponse> {
+        return __request(OpenAPI, {
+            method: 'GET',
+            url: '/api/v1/contests/',
+            query: {
+                skip: data.skip,
+                limit: data.limit,
+                competition_id: data.competitionId,
+                judoka_id: data.judokaId
+            },
+            errors: {
+                422: 'Validation Error'
+            }
+        });
+    }
+    
+    /**
+     * Read Contest
+     * Get a specific contest by id.
+     * @param data The data for the request.
+     * @param data.contestId
+     * @returns ContestPublic Successful Response
+     * @throws ApiError
+     */
+    public static readContest(data: ContestsReadContestData): CancelablePromise<ContestsReadContestResponse> {
+        return __request(OpenAPI, {
+            method: 'GET',
+            url: '/api/v1/contests/{contest_id}',
+            path: {
+                contest_id: data.contestId
+            },
+            errors: {
+                422: 'Validation Error'
+            }
+        });
+    }
+}
+
+export class CountriesService {
+    /**
+     * Read Countries
+     * Retrieve countries.
+     * @param data The data for the request.
+     * @param data.skip
+     * @param data.limit
+     * @returns CountriesPublic Successful Response
+     * @throws ApiError
+     */
+    public static readCountries(data: CountriesReadCountriesData = {}): CancelablePromise<CountriesReadCountriesResponse> {
+        return __request(OpenAPI, {
+            method: 'GET',
+            url: '/api/v1/countries/',
             query: {
                 skip: data.skip,
                 limit: data.limit
@@ -30,39 +155,46 @@ export class ItemsService {
     }
     
     /**
-     * Create Item
-     * Create new item.
+     * Read Country
+     * Get a specific country by id.
      * @param data The data for the request.
-     * @param data.requestBody
-     * @returns ItemPublic Successful Response
+     * @param data.countryId
+     * @returns CountryPublic Successful Response
      * @throws ApiError
      */
-    public static createItem(data: ItemsCreateItemData): CancelablePromise<ItemsCreateItemResponse> {
-        return __request(OpenAPI, {
-            method: 'POST',
-            url: '/api/v1/items/',
-            body: data.requestBody,
-            mediaType: 'application/json',
-            errors: {
-                422: 'Validation Error'
-            }
-        });
-    }
-    
-    /**
-     * Read Item
-     * Get item by ID.
-     * @param data The data for the request.
-     * @param data.id
-     * @returns ItemPublic Successful Response
-     * @throws ApiError
-     */
-    public static readItem(data: ItemsReadItemData): CancelablePromise<ItemsReadItemResponse> {
+    public static readCountry(data: CountriesReadCountryData): CancelablePromise<CountriesReadCountryResponse> {
         return __request(OpenAPI, {
             method: 'GET',
-            url: '/api/v1/items/{id}',
+            url: '/api/v1/countries/{country_id}',
             path: {
-                id: data.id
+                country_id: data.countryId
+            },
+            errors: {
+                422: 'Validation Error'
+            }
+        });
+    }
+}
+
+export class JudokasService {
+    /**
+     * Read Judokas
+     * Retrieve judokas.
+     * @param data The data for the request.
+     * @param data.skip
+     * @param data.limit
+     * @param data.idCountry
+     * @returns JudokasPublic Successful Response
+     * @throws ApiError
+     */
+    public static readJudokas(data: JudokasReadJudokasData = {}): CancelablePromise<JudokasReadJudokasResponse> {
+        return __request(OpenAPI, {
+            method: 'GET',
+            url: '/api/v1/judokas/',
+            query: {
+                skip: data.skip,
+                limit: data.limit,
+                id_country: data.idCountry
             },
             errors: {
                 422: 'Validation Error'
@@ -71,23 +203,20 @@ export class ItemsService {
     }
     
     /**
-     * Update Item
-     * Update an item.
+     * Read Judoka
+     * Get a specific judoka by id.
      * @param data The data for the request.
-     * @param data.id
-     * @param data.requestBody
-     * @returns ItemPublic Successful Response
+     * @param data.judokaId
+     * @returns JudokaPublic Successful Response
      * @throws ApiError
      */
-    public static updateItem(data: ItemsUpdateItemData): CancelablePromise<ItemsUpdateItemResponse> {
+    public static readJudoka(data: JudokasReadJudokaData): CancelablePromise<JudokasReadJudokaResponse> {
         return __request(OpenAPI, {
-            method: 'PUT',
-            url: '/api/v1/items/{id}',
+            method: 'GET',
+            url: '/api/v1/judokas/{judoka_id}',
             path: {
-                id: data.id
+                judoka_id: data.judokaId
             },
-            body: data.requestBody,
-            mediaType: 'application/json',
             errors: {
                 422: 'Validation Error'
             }
@@ -95,19 +224,46 @@ export class ItemsService {
     }
     
     /**
-     * Delete Item
-     * Delete an item.
+     * Read Judoka Contests
+     * Get contests for a specific judoka.
      * @param data The data for the request.
-     * @param data.id
-     * @returns Message Successful Response
+     * @param data.judokaId
+     * @param data.skip
+     * @param data.limit
+     * @returns unknown Successful Response
      * @throws ApiError
      */
-    public static deleteItem(data: ItemsDeleteItemData): CancelablePromise<ItemsDeleteItemResponse> {
+    public static readJudokaContests(data: JudokasReadJudokaContestsData): CancelablePromise<JudokasReadJudokaContestsResponse> {
         return __request(OpenAPI, {
-            method: 'DELETE',
-            url: '/api/v1/items/{id}',
+            method: 'GET',
+            url: '/api/v1/judokas/{judoka_id}/contests',
             path: {
-                id: data.id
+                judoka_id: data.judokaId
+            },
+            query: {
+                skip: data.skip,
+                limit: data.limit
+            },
+            errors: {
+                422: 'Validation Error'
+            }
+        });
+    }
+    
+    /**
+     * Read Judoka Ratings
+     * Get ratings for a specific judoka.
+     * @param data The data for the request.
+     * @param data.judokaId
+     * @returns unknown Successful Response
+     * @throws ApiError
+     */
+    public static readJudokaRatings(data: JudokasReadJudokaRatingsData): CancelablePromise<JudokasReadJudokaRatingsResponse> {
+        return __request(OpenAPI, {
+            method: 'GET',
+            url: '/api/v1/judokas/{judoka_id}/ratings',
+            path: {
+                judoka_id: data.judokaId
             },
             errors: {
                 422: 'Validation Error'
@@ -213,21 +369,316 @@ export class LoginService {
     }
 }
 
-export class PrivateService {
+export class RatingChangesService {
     /**
-     * Create User
-     * Create a new user.
+     * Read Rating Changes
+     * Retrieve rating changes.
      * @param data The data for the request.
-     * @param data.requestBody
-     * @returns UserPublic Successful Response
+     * @param data.skip
+     * @param data.limit
+     * @param data.judokaId
+     * @param data.contestId
+     * @returns RatingChangesPublic Successful Response
      * @throws ApiError
      */
-    public static createUser(data: PrivateCreateUserData): CancelablePromise<PrivateCreateUserResponse> {
+    public static readRatingChanges(data: RatingChangesReadRatingChangesData = {}): CancelablePromise<RatingChangesReadRatingChangesResponse> {
+        return __request(OpenAPI, {
+            method: 'GET',
+            url: '/api/v1/rating-changes/',
+            query: {
+                skip: data.skip,
+                limit: data.limit,
+                judoka_id: data.judokaId,
+                contest_id: data.contestId
+            },
+            errors: {
+                422: 'Validation Error'
+            }
+        });
+    }
+}
+
+export class RatingFormulasService {
+    /**
+     * Read Rating Formulas
+     * Retrieve rating formulas.
+     * @param data The data for the request.
+     * @param data.skip
+     * @param data.limit
+     * @param data.isActive
+     * @returns RatingFormulasPublic Successful Response
+     * @throws ApiError
+     */
+    public static readRatingFormulas(data: RatingFormulasReadRatingFormulasData = {}): CancelablePromise<RatingFormulasReadRatingFormulasResponse> {
+        return __request(OpenAPI, {
+            method: 'GET',
+            url: '/api/v1/rating-formulas/',
+            query: {
+                skip: data.skip,
+                limit: data.limit,
+                is_active: data.isActive
+            },
+            errors: {
+                422: 'Validation Error'
+            }
+        });
+    }
+    
+    /**
+     * Create Rating Formula
+     * Create new rating formula (admin only).
+     * @param data The data for the request.
+     * @param data.requestBody
+     * @returns RatingFormulaPublic Successful Response
+     * @throws ApiError
+     */
+    public static createRatingFormula(data: RatingFormulasCreateRatingFormulaData): CancelablePromise<RatingFormulasCreateRatingFormulaResponse> {
         return __request(OpenAPI, {
             method: 'POST',
-            url: '/api/v1/private/users/',
+            url: '/api/v1/rating-formulas/',
             body: data.requestBody,
             mediaType: 'application/json',
+            errors: {
+                422: 'Validation Error'
+            }
+        });
+    }
+    
+    /**
+     * Read Rating Formula
+     * Get a specific rating formula by id.
+     * @param data The data for the request.
+     * @param data.formulaId
+     * @returns RatingFormulaPublic Successful Response
+     * @throws ApiError
+     */
+    public static readRatingFormula(data: RatingFormulasReadRatingFormulaData): CancelablePromise<RatingFormulasReadRatingFormulaResponse> {
+        return __request(OpenAPI, {
+            method: 'GET',
+            url: '/api/v1/rating-formulas/{formula_id}',
+            path: {
+                formula_id: data.formulaId
+            },
+            errors: {
+                422: 'Validation Error'
+            }
+        });
+    }
+    
+    /**
+     * Update Rating Formula
+     * Update a rating formula (admin only).
+     * @param data The data for the request.
+     * @param data.formulaId
+     * @param data.requestBody
+     * @returns RatingFormulaPublic Successful Response
+     * @throws ApiError
+     */
+    public static updateRatingFormula(data: RatingFormulasUpdateRatingFormulaData): CancelablePromise<RatingFormulasUpdateRatingFormulaResponse> {
+        return __request(OpenAPI, {
+            method: 'PATCH',
+            url: '/api/v1/rating-formulas/{formula_id}',
+            path: {
+                formula_id: data.formulaId
+            },
+            body: data.requestBody,
+            mediaType: 'application/json',
+            errors: {
+                422: 'Validation Error'
+            }
+        });
+    }
+    
+    /**
+     * Delete Rating Formula
+     * Delete a rating formula (admin only).
+     * @param data The data for the request.
+     * @param data.formulaId
+     * @returns unknown Successful Response
+     * @throws ApiError
+     */
+    public static deleteRatingFormula(data: RatingFormulasDeleteRatingFormulaData): CancelablePromise<RatingFormulasDeleteRatingFormulaResponse> {
+        return __request(OpenAPI, {
+            method: 'DELETE',
+            url: '/api/v1/rating-formulas/{formula_id}',
+            path: {
+                formula_id: data.formulaId
+            },
+            errors: {
+                422: 'Validation Error'
+            }
+        });
+    }
+}
+
+export class RatingsService {
+    /**
+     * Read Ratings
+     * Retrieve ratings.
+     * @param data The data for the request.
+     * @param data.skip
+     * @param data.limit
+     * @param data.formulaId
+     * @param data.judokaId
+     * @param data.surname
+     * @param data.weight
+     * @param data.ratingMin
+     * @returns RatingsPublic Successful Response
+     * @throws ApiError
+     */
+    public static readRatings(data: RatingsReadRatingsData = {}): CancelablePromise<RatingsReadRatingsResponse> {
+        return __request(OpenAPI, {
+            method: 'GET',
+            url: '/api/v1/ratings/',
+            query: {
+                skip: data.skip,
+                limit: data.limit,
+                formula_id: data.formulaId,
+                judoka_id: data.judokaId,
+                surname: data.surname,
+                weight: data.weight,
+                rating_min: data.ratingMin
+            },
+            errors: {
+                422: 'Validation Error'
+            }
+        });
+    }
+    
+    /**
+     * Read Leaderboard
+     * Get leaderboard for a specific formula.
+     * @param data The data for the request.
+     * @param data.formulaId
+     * @param data.skip
+     * @param data.limit
+     * @returns unknown Successful Response
+     * @throws ApiError
+     */
+    public static readLeaderboard(data: RatingsReadLeaderboardData): CancelablePromise<RatingsReadLeaderboardResponse> {
+        return __request(OpenAPI, {
+            method: 'GET',
+            url: '/api/v1/ratings/{formula_id}/leaderboard',
+            path: {
+                formula_id: data.formulaId
+            },
+            query: {
+                skip: data.skip,
+                limit: data.limit
+            },
+            errors: {
+                422: 'Validation Error'
+            }
+        });
+    }
+    
+    /**
+     * Read Judoka Rating
+     * Get rating for a specific judoka and formula.
+     * @param data The data for the request.
+     * @param data.formulaId
+     * @param data.judokaId
+     * @returns RatingPublic Successful Response
+     * @throws ApiError
+     */
+    public static readJudokaRating(data: RatingsReadJudokaRatingData): CancelablePromise<RatingsReadJudokaRatingResponse> {
+        return __request(OpenAPI, {
+            method: 'GET',
+            url: '/api/v1/ratings/{formula_id}/judoka/{judoka_id}',
+            path: {
+                formula_id: data.formulaId,
+                judoka_id: data.judokaId
+            },
+            errors: {
+                422: 'Validation Error'
+            }
+        });
+    }
+    
+    /**
+     * Read Rating History
+     * Get rating change history for a specific judoka and formula.
+     * @param data The data for the request.
+     * @param data.formulaId
+     * @param data.judokaId
+     * @param data.skip
+     * @param data.limit
+     * @returns unknown Successful Response
+     * @throws ApiError
+     */
+    public static readRatingHistory(data: RatingsReadRatingHistoryData): CancelablePromise<RatingsReadRatingHistoryResponse> {
+        return __request(OpenAPI, {
+            method: 'GET',
+            url: '/api/v1/ratings/{formula_id}/judoka/{judoka_id}/history',
+            path: {
+                formula_id: data.formulaId,
+                judoka_id: data.judokaId
+            },
+            query: {
+                skip: data.skip,
+                limit: data.limit
+            },
+            errors: {
+                422: 'Validation Error'
+            }
+        });
+    }
+}
+
+export class SyncService {
+    /**
+     * Trigger Sync
+     * Trigger data synchronization from judobase (admin only).
+     * @returns DataSyncPublic Successful Response
+     * @throws ApiError
+     */
+    public static triggerSync(): CancelablePromise<SyncTriggerSyncResponse> {
+        return __request(OpenAPI, {
+            method: 'POST',
+            url: '/api/v1/sync/trigger'
+        });
+    }
+    
+    /**
+     * Read Sync History
+     * Get sync history.
+     * @param data The data for the request.
+     * @param data.skip
+     * @param data.limit
+     * @param data.status
+     * @returns DataSyncsPublic Successful Response
+     * @throws ApiError
+     */
+    public static readSyncHistory(data: SyncReadSyncHistoryData = {}): CancelablePromise<SyncReadSyncHistoryResponse> {
+        return __request(OpenAPI, {
+            method: 'GET',
+            url: '/api/v1/sync/history',
+            query: {
+                skip: data.skip,
+                limit: data.limit,
+                status: data.status
+            },
+            errors: {
+                422: 'Validation Error'
+            }
+        });
+    }
+    
+    /**
+     * Read Sync
+     * Get a specific sync by id.
+     * @param data The data for the request.
+     * @param data.syncId
+     * @returns DataSyncPublic Successful Response
+     * @throws ApiError
+     */
+    public static readSync(data: SyncReadSyncData): CancelablePromise<SyncReadSyncResponse> {
+        return __request(OpenAPI, {
+            method: 'GET',
+            url: '/api/v1/sync/{sync_id}',
+            path: {
+                sync_id: data.syncId
+            },
             errors: {
                 422: 'Validation Error'
             }

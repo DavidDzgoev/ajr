@@ -15,9 +15,16 @@ import { Route as RecoverPasswordRouteImport } from './routes/recover-password'
 import { Route as LoginRouteImport } from './routes/login'
 import { Route as LayoutRouteImport } from './routes/_layout'
 import { Route as LayoutIndexRouteImport } from './routes/_layout/index'
+import { Route as LayoutSyncsRouteImport } from './routes/_layout/syncs'
 import { Route as LayoutSettingsRouteImport } from './routes/_layout/settings'
-import { Route as LayoutItemsRouteImport } from './routes/_layout/items'
-import { Route as LayoutAdminRouteImport } from './routes/_layout/admin'
+import { Route as LayoutRatingsRouteImport } from './routes/_layout/ratings'
+import { Route as LayoutRatingFormulasRouteImport } from './routes/_layout/rating-formulas'
+import { Route as LayoutRatingChangesRouteImport } from './routes/_layout/rating-changes'
+import { Route as LayoutJudokasRouteImport } from './routes/_layout/judokas'
+import { Route as LayoutCountriesRouteImport } from './routes/_layout/countries'
+import { Route as LayoutContestsRouteImport } from './routes/_layout/contests'
+import { Route as LayoutCompetitionsRouteImport } from './routes/_layout/competitions'
+import { Route as LayoutCommandsRouteImport } from './routes/_layout/commands'
 
 const SignupRoute = SignupRouteImport.update({
   id: '/signup',
@@ -48,19 +55,54 @@ const LayoutIndexRoute = LayoutIndexRouteImport.update({
   path: '/',
   getParentRoute: () => LayoutRoute,
 } as any)
+const LayoutSyncsRoute = LayoutSyncsRouteImport.update({
+  id: '/syncs',
+  path: '/syncs',
+  getParentRoute: () => LayoutRoute,
+} as any)
 const LayoutSettingsRoute = LayoutSettingsRouteImport.update({
   id: '/settings',
   path: '/settings',
   getParentRoute: () => LayoutRoute,
 } as any)
-const LayoutItemsRoute = LayoutItemsRouteImport.update({
-  id: '/items',
-  path: '/items',
+const LayoutRatingsRoute = LayoutRatingsRouteImport.update({
+  id: '/ratings',
+  path: '/ratings',
   getParentRoute: () => LayoutRoute,
 } as any)
-const LayoutAdminRoute = LayoutAdminRouteImport.update({
-  id: '/admin',
-  path: '/admin',
+const LayoutRatingFormulasRoute = LayoutRatingFormulasRouteImport.update({
+  id: '/rating-formulas',
+  path: '/rating-formulas',
+  getParentRoute: () => LayoutRoute,
+} as any)
+const LayoutRatingChangesRoute = LayoutRatingChangesRouteImport.update({
+  id: '/rating-changes',
+  path: '/rating-changes',
+  getParentRoute: () => LayoutRoute,
+} as any)
+const LayoutJudokasRoute = LayoutJudokasRouteImport.update({
+  id: '/judokas',
+  path: '/judokas',
+  getParentRoute: () => LayoutRoute,
+} as any)
+const LayoutCountriesRoute = LayoutCountriesRouteImport.update({
+  id: '/countries',
+  path: '/countries',
+  getParentRoute: () => LayoutRoute,
+} as any)
+const LayoutContestsRoute = LayoutContestsRouteImport.update({
+  id: '/contests',
+  path: '/contests',
+  getParentRoute: () => LayoutRoute,
+} as any)
+const LayoutCompetitionsRoute = LayoutCompetitionsRouteImport.update({
+  id: '/competitions',
+  path: '/competitions',
+  getParentRoute: () => LayoutRoute,
+} as any)
+const LayoutCommandsRoute = LayoutCommandsRouteImport.update({
+  id: '/commands',
+  path: '/commands',
   getParentRoute: () => LayoutRoute,
 } as any)
 
@@ -69,9 +111,16 @@ export interface FileRoutesByFullPath {
   '/recover-password': typeof RecoverPasswordRoute
   '/reset-password': typeof ResetPasswordRoute
   '/signup': typeof SignupRoute
-  '/admin': typeof LayoutAdminRoute
-  '/items': typeof LayoutItemsRoute
+  '/commands': typeof LayoutCommandsRoute
+  '/competitions': typeof LayoutCompetitionsRoute
+  '/contests': typeof LayoutContestsRoute
+  '/countries': typeof LayoutCountriesRoute
+  '/judokas': typeof LayoutJudokasRoute
+  '/rating-changes': typeof LayoutRatingChangesRoute
+  '/rating-formulas': typeof LayoutRatingFormulasRoute
+  '/ratings': typeof LayoutRatingsRoute
   '/settings': typeof LayoutSettingsRoute
+  '/syncs': typeof LayoutSyncsRoute
   '/': typeof LayoutIndexRoute
 }
 export interface FileRoutesByTo {
@@ -79,9 +128,16 @@ export interface FileRoutesByTo {
   '/recover-password': typeof RecoverPasswordRoute
   '/reset-password': typeof ResetPasswordRoute
   '/signup': typeof SignupRoute
-  '/admin': typeof LayoutAdminRoute
-  '/items': typeof LayoutItemsRoute
+  '/commands': typeof LayoutCommandsRoute
+  '/competitions': typeof LayoutCompetitionsRoute
+  '/contests': typeof LayoutContestsRoute
+  '/countries': typeof LayoutCountriesRoute
+  '/judokas': typeof LayoutJudokasRoute
+  '/rating-changes': typeof LayoutRatingChangesRoute
+  '/rating-formulas': typeof LayoutRatingFormulasRoute
+  '/ratings': typeof LayoutRatingsRoute
   '/settings': typeof LayoutSettingsRoute
+  '/syncs': typeof LayoutSyncsRoute
   '/': typeof LayoutIndexRoute
 }
 export interface FileRoutesById {
@@ -91,9 +147,16 @@ export interface FileRoutesById {
   '/recover-password': typeof RecoverPasswordRoute
   '/reset-password': typeof ResetPasswordRoute
   '/signup': typeof SignupRoute
-  '/_layout/admin': typeof LayoutAdminRoute
-  '/_layout/items': typeof LayoutItemsRoute
+  '/_layout/commands': typeof LayoutCommandsRoute
+  '/_layout/competitions': typeof LayoutCompetitionsRoute
+  '/_layout/contests': typeof LayoutContestsRoute
+  '/_layout/countries': typeof LayoutCountriesRoute
+  '/_layout/judokas': typeof LayoutJudokasRoute
+  '/_layout/rating-changes': typeof LayoutRatingChangesRoute
+  '/_layout/rating-formulas': typeof LayoutRatingFormulasRoute
+  '/_layout/ratings': typeof LayoutRatingsRoute
   '/_layout/settings': typeof LayoutSettingsRoute
+  '/_layout/syncs': typeof LayoutSyncsRoute
   '/_layout/': typeof LayoutIndexRoute
 }
 export interface FileRouteTypes {
@@ -103,9 +166,16 @@ export interface FileRouteTypes {
     | '/recover-password'
     | '/reset-password'
     | '/signup'
-    | '/admin'
-    | '/items'
+    | '/commands'
+    | '/competitions'
+    | '/contests'
+    | '/countries'
+    | '/judokas'
+    | '/rating-changes'
+    | '/rating-formulas'
+    | '/ratings'
     | '/settings'
+    | '/syncs'
     | '/'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -113,9 +183,16 @@ export interface FileRouteTypes {
     | '/recover-password'
     | '/reset-password'
     | '/signup'
-    | '/admin'
-    | '/items'
+    | '/commands'
+    | '/competitions'
+    | '/contests'
+    | '/countries'
+    | '/judokas'
+    | '/rating-changes'
+    | '/rating-formulas'
+    | '/ratings'
     | '/settings'
+    | '/syncs'
     | '/'
   id:
     | '__root__'
@@ -124,9 +201,16 @@ export interface FileRouteTypes {
     | '/recover-password'
     | '/reset-password'
     | '/signup'
-    | '/_layout/admin'
-    | '/_layout/items'
+    | '/_layout/commands'
+    | '/_layout/competitions'
+    | '/_layout/contests'
+    | '/_layout/countries'
+    | '/_layout/judokas'
+    | '/_layout/rating-changes'
+    | '/_layout/rating-formulas'
+    | '/_layout/ratings'
     | '/_layout/settings'
+    | '/_layout/syncs'
     | '/_layout/'
   fileRoutesById: FileRoutesById
 }
@@ -182,6 +266,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof LayoutIndexRouteImport
       parentRoute: typeof LayoutRoute
     }
+    '/_layout/syncs': {
+      id: '/_layout/syncs'
+      path: '/syncs'
+      fullPath: '/syncs'
+      preLoaderRoute: typeof LayoutSyncsRouteImport
+      parentRoute: typeof LayoutRoute
+    }
     '/_layout/settings': {
       id: '/_layout/settings'
       path: '/settings'
@@ -189,34 +280,90 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof LayoutSettingsRouteImport
       parentRoute: typeof LayoutRoute
     }
-    '/_layout/items': {
-      id: '/_layout/items'
-      path: '/items'
-      fullPath: '/items'
-      preLoaderRoute: typeof LayoutItemsRouteImport
+    '/_layout/ratings': {
+      id: '/_layout/ratings'
+      path: '/ratings'
+      fullPath: '/ratings'
+      preLoaderRoute: typeof LayoutRatingsRouteImport
       parentRoute: typeof LayoutRoute
     }
-    '/_layout/admin': {
-      id: '/_layout/admin'
-      path: '/admin'
-      fullPath: '/admin'
-      preLoaderRoute: typeof LayoutAdminRouteImport
+    '/_layout/rating-formulas': {
+      id: '/_layout/rating-formulas'
+      path: '/rating-formulas'
+      fullPath: '/rating-formulas'
+      preLoaderRoute: typeof LayoutRatingFormulasRouteImport
+      parentRoute: typeof LayoutRoute
+    }
+    '/_layout/rating-changes': {
+      id: '/_layout/rating-changes'
+      path: '/rating-changes'
+      fullPath: '/rating-changes'
+      preLoaderRoute: typeof LayoutRatingChangesRouteImport
+      parentRoute: typeof LayoutRoute
+    }
+    '/_layout/judokas': {
+      id: '/_layout/judokas'
+      path: '/judokas'
+      fullPath: '/judokas'
+      preLoaderRoute: typeof LayoutJudokasRouteImport
+      parentRoute: typeof LayoutRoute
+    }
+    '/_layout/countries': {
+      id: '/_layout/countries'
+      path: '/countries'
+      fullPath: '/countries'
+      preLoaderRoute: typeof LayoutCountriesRouteImport
+      parentRoute: typeof LayoutRoute
+    }
+    '/_layout/contests': {
+      id: '/_layout/contests'
+      path: '/contests'
+      fullPath: '/contests'
+      preLoaderRoute: typeof LayoutContestsRouteImport
+      parentRoute: typeof LayoutRoute
+    }
+    '/_layout/competitions': {
+      id: '/_layout/competitions'
+      path: '/competitions'
+      fullPath: '/competitions'
+      preLoaderRoute: typeof LayoutCompetitionsRouteImport
+      parentRoute: typeof LayoutRoute
+    }
+    '/_layout/commands': {
+      id: '/_layout/commands'
+      path: '/commands'
+      fullPath: '/commands'
+      preLoaderRoute: typeof LayoutCommandsRouteImport
       parentRoute: typeof LayoutRoute
     }
   }
 }
 
 interface LayoutRouteChildren {
-  LayoutAdminRoute: typeof LayoutAdminRoute
-  LayoutItemsRoute: typeof LayoutItemsRoute
+  LayoutCommandsRoute: typeof LayoutCommandsRoute
+  LayoutCompetitionsRoute: typeof LayoutCompetitionsRoute
+  LayoutContestsRoute: typeof LayoutContestsRoute
+  LayoutCountriesRoute: typeof LayoutCountriesRoute
+  LayoutJudokasRoute: typeof LayoutJudokasRoute
+  LayoutRatingChangesRoute: typeof LayoutRatingChangesRoute
+  LayoutRatingFormulasRoute: typeof LayoutRatingFormulasRoute
+  LayoutRatingsRoute: typeof LayoutRatingsRoute
   LayoutSettingsRoute: typeof LayoutSettingsRoute
+  LayoutSyncsRoute: typeof LayoutSyncsRoute
   LayoutIndexRoute: typeof LayoutIndexRoute
 }
 
 const LayoutRouteChildren: LayoutRouteChildren = {
-  LayoutAdminRoute: LayoutAdminRoute,
-  LayoutItemsRoute: LayoutItemsRoute,
+  LayoutCommandsRoute: LayoutCommandsRoute,
+  LayoutCompetitionsRoute: LayoutCompetitionsRoute,
+  LayoutContestsRoute: LayoutContestsRoute,
+  LayoutCountriesRoute: LayoutCountriesRoute,
+  LayoutJudokasRoute: LayoutJudokasRoute,
+  LayoutRatingChangesRoute: LayoutRatingChangesRoute,
+  LayoutRatingFormulasRoute: LayoutRatingFormulasRoute,
+  LayoutRatingsRoute: LayoutRatingsRoute,
   LayoutSettingsRoute: LayoutSettingsRoute,
+  LayoutSyncsRoute: LayoutSyncsRoute,
   LayoutIndexRoute: LayoutIndexRoute,
 }
 

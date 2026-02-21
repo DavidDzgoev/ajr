@@ -60,7 +60,7 @@ def read_competition_contests(
     if not competition:
         raise HTTPException(status_code=404, detail="Competition not found")
 
-    contests = crud.get_contests(
+    contests, count = crud.get_contests(
         session=session, competition_id=competition_id, skip=skip, limit=limit
     )
-    return {"data": contests, "count": len(contests)}
+    return {"data": contests, "count": count}

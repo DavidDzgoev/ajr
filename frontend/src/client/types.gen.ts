@@ -9,30 +9,108 @@ export type Body_login_login_access_token = {
     client_secret?: (string | null);
 };
 
+export type CompetitionPublic = {
+    date_from?: (string | null);
+    date_to?: (string | null);
+    name?: (string | null);
+    rank_name?: (string | null);
+    competition_code?: (string | null);
+    id_country?: (number | null);
+    city?: (string | null);
+    timezone?: (string | null);
+    id: number;
+};
+
+export type CompetitionsPublic = {
+    data: Array<CompetitionPublic>;
+    count: number;
+};
+
+export type ContestPublic = {
+    id_competition?: (number | null);
+    id_judoka_blue?: (number | null);
+    id_judoka_white?: (number | null);
+    id_winner?: (number | null);
+    is_finished?: (number | null);
+    duration?: (string | null);
+    ippon_w?: (number | null);
+    waza_w?: (number | null);
+    yuko_w?: (number | null);
+    penalty_w?: (number | null);
+    hsk_w?: (number | null);
+    ippon_b?: (number | null);
+    waza_b?: (number | null);
+    yuko_b?: (number | null);
+    penalty_b?: (number | null);
+    hsk_b?: (number | null);
+    round?: (number | null);
+    round_code?: (string | null);
+    round_name?: (string | null);
+    type?: (number | null);
+    gs?: (number | null);
+    bye?: (number | null);
+    fight_no?: (number | null);
+    weight?: (string | null);
+    id_weight?: (number | null);
+    fight_duration?: (number | null);
+    rank_name?: (string | null);
+    rating_change_w?: (number | null);
+    rating_change_b?: (number | null);
+    id: number;
+};
+
+export type ContestsPublic = {
+    data: Array<ContestPublic>;
+    count: number;
+};
+
+export type CountriesPublic = {
+    data: Array<CountryPublic>;
+    count: number;
+};
+
+export type CountryPublic = {
+    name?: (string | null);
+    ioc?: (string | null);
+    file_flag?: (string | null);
+    id: number;
+};
+
+export type DataSyncPublic = {
+    sync_type: string;
+    status: string;
+    started_at: string;
+    completed_at?: (string | null);
+    records_processed?: number;
+    records_created?: number;
+    records_updated?: number;
+    error_message?: (string | null);
+    created_by?: (string | null);
+    id: string;
+};
+
+export type DataSyncsPublic = {
+    data: Array<DataSyncPublic>;
+    count: number;
+};
+
 export type HTTPValidationError = {
     detail?: Array<ValidationError>;
 };
 
-export type ItemCreate = {
-    title: string;
-    description?: (string | null);
+export type JudokaPublic = {
+    family_name?: (string | null);
+    given_name?: (string | null);
+    gender?: (string | null);
+    judoka_picture?: (string | null);
+    dob_year?: (number | null);
+    id_country?: (number | null);
+    id: number;
 };
 
-export type ItemPublic = {
-    title: string;
-    description?: (string | null);
-    id: string;
-    owner_id: string;
-};
-
-export type ItemsPublic = {
-    data: Array<ItemPublic>;
+export type JudokasPublic = {
+    data: Array<JudokaPublic>;
     count: number;
-};
-
-export type ItemUpdate = {
-    title?: (string | null);
-    description?: (string | null);
 };
 
 export type Message = {
@@ -44,11 +122,59 @@ export type NewPassword = {
     new_password: string;
 };
 
-export type PrivateUserCreate = {
-    email: string;
-    password: string;
-    full_name: string;
-    is_verified?: boolean;
+export type RatingChangePublic = {
+    id_judoka?: (number | null);
+    id_contest?: (number | null);
+    id_opponent?: (number | null);
+    opponent_rating_at_match?: (number | null);
+    rating_change?: (number | null);
+    opponent_rating_change?: (number | null);
+    id: number;
+};
+
+export type RatingChangesPublic = {
+    data: Array<RatingChangePublic>;
+    count: number;
+};
+
+export type RatingFormulaCreate = {
+    name: string;
+    description?: (string | null);
+    is_active?: boolean;
+};
+
+export type RatingFormulaPublic = {
+    name: string;
+    description?: (string | null);
+    is_active?: boolean;
+    id: string;
+};
+
+export type RatingFormulasPublic = {
+    data: Array<RatingFormulaPublic>;
+    count: number;
+};
+
+export type RatingFormulaUpdate = {
+    name?: (string | null);
+    description?: (string | null);
+    is_active?: (boolean | null);
+};
+
+export type RatingPublic = {
+    id_judoka?: (number | null);
+    id_weight?: (number | null);
+    weight?: (string | null);
+    formula_id?: (string | null);
+    rating_value?: (number | null);
+    id: number;
+    judoka_family_name?: (string | null);
+    judoka_given_name?: (string | null);
+};
+
+export type RatingsPublic = {
+    data: Array<RatingPublic>;
+    count: number;
 };
 
 export type Token = {
@@ -107,37 +233,83 @@ export type ValidationError = {
     type: string;
 };
 
-export type ItemsReadItemsData = {
+export type CompetitionsReadCompetitionsData = {
+    idCountry?: (number | null);
     limit?: number;
     skip?: number;
 };
 
-export type ItemsReadItemsResponse = (ItemsPublic);
+export type CompetitionsReadCompetitionsResponse = (CompetitionsPublic);
 
-export type ItemsCreateItemData = {
-    requestBody: ItemCreate;
+export type CompetitionsReadCompetitionData = {
+    competitionId: number;
 };
 
-export type ItemsCreateItemResponse = (ItemPublic);
+export type CompetitionsReadCompetitionResponse = (CompetitionPublic);
 
-export type ItemsReadItemData = {
-    id: string;
+export type CompetitionsReadCompetitionContestsData = {
+    competitionId: number;
+    limit?: number;
+    skip?: number;
 };
 
-export type ItemsReadItemResponse = (ItemPublic);
+export type CompetitionsReadCompetitionContestsResponse = (unknown);
 
-export type ItemsUpdateItemData = {
-    id: string;
-    requestBody: ItemUpdate;
+export type ContestsReadContestsData = {
+    competitionId?: (number | null);
+    judokaId?: (number | null);
+    limit?: number;
+    skip?: number;
 };
 
-export type ItemsUpdateItemResponse = (ItemPublic);
+export type ContestsReadContestsResponse = (ContestsPublic);
 
-export type ItemsDeleteItemData = {
-    id: string;
+export type ContestsReadContestData = {
+    contestId: number;
 };
 
-export type ItemsDeleteItemResponse = (Message);
+export type ContestsReadContestResponse = (ContestPublic);
+
+export type CountriesReadCountriesData = {
+    limit?: number;
+    skip?: number;
+};
+
+export type CountriesReadCountriesResponse = (CountriesPublic);
+
+export type CountriesReadCountryData = {
+    countryId: number;
+};
+
+export type CountriesReadCountryResponse = (CountryPublic);
+
+export type JudokasReadJudokasData = {
+    idCountry?: (number | null);
+    limit?: number;
+    skip?: number;
+};
+
+export type JudokasReadJudokasResponse = (JudokasPublic);
+
+export type JudokasReadJudokaData = {
+    judokaId: number;
+};
+
+export type JudokasReadJudokaResponse = (JudokaPublic);
+
+export type JudokasReadJudokaContestsData = {
+    judokaId: number;
+    limit?: number;
+    skip?: number;
+};
+
+export type JudokasReadJudokaContestsResponse = (unknown);
+
+export type JudokasReadJudokaRatingsData = {
+    judokaId: number;
+};
+
+export type JudokasReadJudokaRatingsResponse = (unknown);
 
 export type LoginLoginAccessTokenData = {
     formData: Body_login_login_access_token;
@@ -165,11 +337,99 @@ export type LoginRecoverPasswordHtmlContentData = {
 
 export type LoginRecoverPasswordHtmlContentResponse = (string);
 
-export type PrivateCreateUserData = {
-    requestBody: PrivateUserCreate;
+export type RatingChangesReadRatingChangesData = {
+    contestId?: (number | null);
+    judokaId?: (number | null);
+    limit?: number;
+    skip?: number;
 };
 
-export type PrivateCreateUserResponse = (UserPublic);
+export type RatingChangesReadRatingChangesResponse = (RatingChangesPublic);
+
+export type RatingFormulasReadRatingFormulasData = {
+    isActive?: (boolean | null);
+    limit?: number;
+    skip?: number;
+};
+
+export type RatingFormulasReadRatingFormulasResponse = (RatingFormulasPublic);
+
+export type RatingFormulasCreateRatingFormulaData = {
+    requestBody: RatingFormulaCreate;
+};
+
+export type RatingFormulasCreateRatingFormulaResponse = (RatingFormulaPublic);
+
+export type RatingFormulasReadRatingFormulaData = {
+    formulaId: string;
+};
+
+export type RatingFormulasReadRatingFormulaResponse = (RatingFormulaPublic);
+
+export type RatingFormulasUpdateRatingFormulaData = {
+    formulaId: string;
+    requestBody: RatingFormulaUpdate;
+};
+
+export type RatingFormulasUpdateRatingFormulaResponse = (RatingFormulaPublic);
+
+export type RatingFormulasDeleteRatingFormulaData = {
+    formulaId: string;
+};
+
+export type RatingFormulasDeleteRatingFormulaResponse = (unknown);
+
+export type RatingsReadRatingsData = {
+    formulaId?: (string | null);
+    judokaId?: (number | null);
+    limit?: number;
+    ratingMin?: (number | null);
+    skip?: number;
+    surname?: (string | null);
+    weight?: (string | null);
+};
+
+export type RatingsReadRatingsResponse = (RatingsPublic);
+
+export type RatingsReadLeaderboardData = {
+    formulaId: string;
+    limit?: number;
+    skip?: number;
+};
+
+export type RatingsReadLeaderboardResponse = (unknown);
+
+export type RatingsReadJudokaRatingData = {
+    formulaId: string;
+    judokaId: number;
+};
+
+export type RatingsReadJudokaRatingResponse = (RatingPublic);
+
+export type RatingsReadRatingHistoryData = {
+    formulaId: string;
+    judokaId: number;
+    limit?: number;
+    skip?: number;
+};
+
+export type RatingsReadRatingHistoryResponse = (unknown);
+
+export type SyncTriggerSyncResponse = (DataSyncPublic);
+
+export type SyncReadSyncHistoryData = {
+    limit?: number;
+    skip?: number;
+    status?: (string | null);
+};
+
+export type SyncReadSyncHistoryResponse = (DataSyncsPublic);
+
+export type SyncReadSyncData = {
+    syncId: string;
+};
+
+export type SyncReadSyncResponse = (DataSyncPublic);
 
 export type UsersReadUsersData = {
     limit?: number;

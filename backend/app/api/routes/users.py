@@ -2,7 +2,8 @@ import uuid
 from typing import Any
 
 from fastapi import APIRouter, Depends, HTTPException
-from sqlmodel import col, delete, func, select
+from sqlalchemy import update
+from sqlmodel import func, select
 
 from app import crud
 from app.api.deps import (
@@ -13,7 +14,7 @@ from app.api.deps import (
 from app.core.config import settings
 from app.core.security import get_password_hash, verify_password
 from app.models import (
-    Item,
+    DataSync,
     Message,
     UpdatePassword,
     User,
@@ -134,6 +135,11 @@ def delete_user_me(session: SessionDep, current_user: CurrentUser) -> Any:
         raise HTTPException(
             status_code=403, detail="Super users are not allowed to delete themselves"
         )
+    session.exec(
+        update(DataSync)
+        .where(DataSync.created_by == current_user.id)
+        .values(created_by=None)
+    )
     session.delete(current_user)
     session.commit()
     return Message(message="User deleted successfully")
@@ -219,8 +225,11 @@ def delete_user(
         raise HTTPException(
             status_code=403, detail="Super users are not allowed to delete themselves"
         )
-    statement = delete(Item).where(col(Item.owner_id) == user_id)
-    session.exec(statement)  # type: ignore
+    session.exec(
+        update(DataSync)
+        .where(DataSync.created_by == user.id)
+        .values(created_by=None)
+    )
     session.delete(user)
     session.commit()
     return Message(message="User deleted successfully")

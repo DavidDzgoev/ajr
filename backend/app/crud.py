@@ -7,11 +7,11 @@ from app.core.security import get_password_hash, verify_password
 from app.models import (
     Competition,
     Contest,
+    Country,
     DataSync,
-    Item,
-    ItemCreate,
     Judoka,
     Rating,
+    RatingChange,
     RatingFormula,
     RatingFormulaCreate,
     RatingFormulaUpdate,
@@ -60,15 +60,8 @@ def authenticate(*, session: Session, email: str, password: str) -> User | None:
     return db_user
 
 
-def create_item(*, session: Session, item_in: ItemCreate, owner_id: uuid.UUID) -> Item:
-    db_item = Item.model_validate(item_in, update={"owner_id": owner_id})
-    session.add(db_item)
-    session.commit()
-    session.refresh(db_item)
-    return db_item
-
-
 # RatingFormula CRUD
+
 
 def get_rating_formulas(
     *,
@@ -78,7 +71,9 @@ def get_rating_formulas(
     is_active: bool | None = None,
 ) -> list[RatingFormula]:
     """Список формул рейтинга с пагинацией и опциональным фильтром по is_active."""
-    statement = select(RatingFormula).offset(skip).limit(limit).order_by(RatingFormula.name)
+    statement = (
+        select(RatingFormula).offset(skip).limit(limit).order_by(RatingFormula.name)
+    )
     if is_active is not None:
         statement = statement.where(RatingFormula.is_active == is_active)
     return list(session.exec(statement).all())
@@ -127,6 +122,7 @@ def delete_rating_formula(*, session: Session, formula_id: uuid.UUID) -> None:
 
 # Competition CRUD
 
+
 def get_competitions(
     *,
     session: Session,
@@ -152,7 +148,27 @@ def get_competition_by_id(
     return session.get(Competition, competition_id)
 
 
+def get_countries(
+    *,
+    session: Session,
+    skip: int = 0,
+    limit: int = 100,
+) -> tuple[list[Country], int]:
+    """Список стран с пагинацией. Возвращает (data, count)."""
+    statement = select(Country).order_by(Country.name)
+    count_statement = select(func.count()).select_from(Country)
+    count = session.exec(count_statement).one()
+    rows = session.exec(statement.offset(skip).limit(limit)).all()
+    return (list(rows), count)
+
+
+def get_country_by_id(*, session: Session, country_id: int) -> Country | None:
+    """Страна по id."""
+    return session.get(Country, country_id)
+
+
 # Contest CRUD
+
 
 def get_contests(
     *,
@@ -161,16 +177,27 @@ def get_contests(
     limit: int = 100,
     competition_id: int | None = None,
     judoka_id: int | None = None,
-) -> list[Contest]:
+) -> tuple[list[Contest], int]:
     """Список поединков с фильтрами по соревнованию и/или дзюдоисту."""
     statement = select(Contest).order_by(Contest.id.desc())
+    count_statement = select(func.count()).select_from(Contest)
     if competition_id is not None:
         statement = statement.where(Contest.id_competition == competition_id)
+        count_statement = count_statement.where(
+            Contest.id_competition == competition_id
+        )
     if judoka_id is not None:
         statement = statement.where(
-            (Contest.id_judoka_blue == judoka_id) | (Contest.id_judoka_white == judoka_id)
+            (Contest.id_judoka_blue == judoka_id)
+            | (Contest.id_judoka_white == judoka_id)
         )
-    return list(session.exec(statement.offset(skip).limit(limit)).all())
+        count_statement = count_statement.where(
+            (Contest.id_judoka_blue == judoka_id)
+            | (Contest.id_judoka_white == judoka_id)
+        )
+    count = session.exec(count_statement).one()
+    rows = session.exec(statement.offset(skip).limit(limit)).all()
+    return (list(rows), count)
 
 
 def get_contest_by_id(*, session: Session, contest_id: int) -> Contest | None:
@@ -179,6 +206,7 @@ def get_contest_by_id(*, session: Session, contest_id: int) -> Contest | None:
 
 
 # Judoka CRUD
+
 
 def get_judokas(
     *,
@@ -214,7 +242,8 @@ def get_judoka_contests(
     statement = (
         select(Contest)
         .where(
-            (Contest.id_judoka_blue == judoka_id) | (Contest.id_judoka_white == judoka_id)
+            (Contest.id_judoka_blue == judoka_id)
+            | (Contest.id_judoka_white == judoka_id)
         )
         .order_by(Contest.id.desc())
         .offset(skip)
@@ -231,6 +260,7 @@ def get_judoka_ratings(*, session: Session, judoka_id: int) -> list[Rating]:
 
 # Rating CRUD
 
+
 def get_ratings(
     *,
     session: Session,
@@ -238,14 +268,51 @@ def get_ratings(
     limit: int = 100,
     formula_id: uuid.UUID | None = None,
     judoka_id: int | None = None,
-) -> list[Rating]:
+    surname: str | None = None,
+    weight: str | None = None,
+    rating_min: float | None = None,
+) -> tuple[list[dict[str, Any]], int]:
     """Список рейтингов с фильтрами."""
-    statement = select(Rating).order_by(Rating.id.desc())
+    statement = (
+        select(Rating, Judoka.family_name, Judoka.given_name)
+        .select_from(Rating)
+        .join(Judoka, Rating.id_judoka == Judoka.id, isouter=True)
+        .order_by(Rating.rating_value.desc().nullslast(), Rating.id.desc())
+    )
+    count_statement = (
+        select(func.count())
+        .select_from(Rating)
+        .join(Judoka, Rating.id_judoka == Judoka.id, isouter=True)
+    )
     if formula_id is not None:
         statement = statement.where(Rating.formula_id == formula_id)
+        count_statement = count_statement.where(Rating.formula_id == formula_id)
     if judoka_id is not None:
         statement = statement.where(Rating.id_judoka == judoka_id)
-    return list(session.exec(statement.offset(skip).limit(limit)).all())
+        count_statement = count_statement.where(Rating.id_judoka == judoka_id)
+    if surname:
+        surname_like = f"%{surname.strip()}%"
+        statement = statement.where(Judoka.family_name.ilike(surname_like))
+        count_statement = count_statement.where(Judoka.family_name.ilike(surname_like))
+    if weight:
+        weight_like = f"%{weight.strip()}%"
+        statement = statement.where(Rating.weight.ilike(weight_like))
+        count_statement = count_statement.where(Rating.weight.ilike(weight_like))
+    if rating_min is not None:
+        statement = statement.where(Rating.rating_value >= rating_min)
+        count_statement = count_statement.where(Rating.rating_value >= rating_min)
+
+    count = session.exec(count_statement).one()
+    rows = session.exec(statement.offset(skip).limit(limit)).all()
+
+    data: list[dict[str, Any]] = []
+    for rating, family_name, given_name in rows:
+        row = rating.model_dump()
+        row["judoka_family_name"] = family_name
+        row["judoka_given_name"] = given_name
+        data.append(row)
+
+    return data, count
 
 
 def get_leaderboard(
@@ -259,7 +326,7 @@ def get_leaderboard(
     statement = (
         select(Rating)
         .where(Rating.formula_id == formula_id)
-        .order_by(Rating.id.desc())  # при необходимости заменить на поле «рейтинг»
+        .order_by(Rating.rating_value.desc().nullslast(), Rating.id.desc())
         .offset(skip)
         .limit(limit)
     )
@@ -291,7 +358,30 @@ def get_rating_history(
     return []
 
 
+def get_rating_changes(
+    *,
+    session: Session,
+    skip: int = 0,
+    limit: int = 100,
+    judoka_id: int | None = None,
+    contest_id: int | None = None,
+) -> tuple[list[RatingChange], int]:
+    """Изменения рейтинга с фильтрами. Возвращает (data, count)."""
+    statement = select(RatingChange).order_by(RatingChange.id.desc())
+    count_statement = select(func.count()).select_from(RatingChange)
+    if judoka_id is not None:
+        statement = statement.where(RatingChange.id_judoka == judoka_id)
+        count_statement = count_statement.where(RatingChange.id_judoka == judoka_id)
+    if contest_id is not None:
+        statement = statement.where(RatingChange.id_contest == contest_id)
+        count_statement = count_statement.where(RatingChange.id_contest == contest_id)
+    count = session.exec(count_statement).one()
+    rows = session.exec(statement.offset(skip).limit(limit)).all()
+    return (list(rows), count)
+
+
 # DataSync CRUD
+
 
 def get_data_syncs(
     *,
@@ -311,8 +401,6 @@ def get_data_syncs(
     return (list(rows), count)
 
 
-def get_data_sync_by_id(
-    *, session: Session, sync_id: uuid.UUID
-) -> DataSync | None:
+def get_data_sync_by_id(*, session: Session, sync_id: uuid.UUID) -> DataSync | None:
     """Запись лога синхронизации по id."""
     return session.get(DataSync, sync_id)
