@@ -1,8 +1,8 @@
 import uuid
-from datetime import date, datetime, timezone
+from datetime import datetime
 
 from pydantic import EmailStr
-from sqlalchemy import JSON, Column, Text, UniqueConstraint
+from sqlalchemy import Column, Text
 from sqlmodel import Field, Relationship, SQLModel
 
 
@@ -45,7 +45,6 @@ class UpdatePassword(SQLModel):
 class User(UserBase, table=True):
     id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
     hashed_password: str
-    items: list["Item"] = Relationship(back_populates="owner", cascade_delete=True)
 
 
 # Properties to return via API, id is always required
@@ -55,42 +54,6 @@ class UserPublic(UserBase):
 
 class UsersPublic(SQLModel):
     data: list[UserPublic]
-    count: int
-
-
-# Shared properties
-class ItemBase(SQLModel):
-    title: str = Field(min_length=1, max_length=255)
-    description: str | None = Field(default=None, max_length=255)
-
-
-# Properties to receive on item creation
-class ItemCreate(ItemBase):
-    pass
-
-
-# Properties to receive on item update
-class ItemUpdate(ItemBase):
-    title: str | None = Field(default=None, min_length=1, max_length=255)  # type: ignore
-
-
-# Database model, database table inferred from class name
-class Item(ItemBase, table=True):
-    id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
-    owner_id: uuid.UUID = Field(
-        foreign_key="user.id", nullable=False, ondelete="CASCADE"
-    )
-    owner: User | None = Relationship(back_populates="items")
-
-
-# Properties to return via API, id is always required
-class ItemPublic(ItemBase):
-    id: uuid.UUID
-    owner_id: uuid.UUID
-
-
-class ItemsPublic(SQLModel):
-    data: list[ItemPublic]
     count: int
 
 
@@ -117,7 +80,9 @@ class NewPassword(SQLModel):
 
 # DataSync (Лог синхронизации данных)
 class DataSyncBase(SQLModel):
-    sync_type: str = Field(max_length=50)  # "competitions", "contests", "judokas", "full"
+    sync_type: str = Field(
+        max_length=50
+    )  # "competitions", "contests", "judokas", "full"
     status: str = Field(max_length=50)  # "pending", "running", "completed", "failed"
     started_at: datetime
     completed_at: datetime | None = Field(default=None)
@@ -125,7 +90,9 @@ class DataSyncBase(SQLModel):
     records_created: int = Field(default=0)
     records_updated: int = Field(default=0)
     error_message: str | None = Field(default=None, sa_column=Column(Text))
-    created_by: uuid.UUID | None = Field(default=None, foreign_key="user.id")
+    created_by: uuid.UUID | None = Field(
+        default=None, foreign_key="user.id", ondelete="SET NULL"
+    )
 
 
 class DataSync(DataSyncBase, table=True):
@@ -163,6 +130,11 @@ class CountryPublic(CountryBase):
     id: int
 
 
+class CountriesPublic(SQLModel):
+    data: list[CountryPublic]
+    count: int
+
+
 # Judoka model
 class JudokaBase(SQLModel):
     family_name: str | None = Field(default=None, max_length=255)
@@ -189,6 +161,10 @@ class Judoka(JudokaBase, table=True):
         sa_relationship_kwargs={"foreign_keys": "[Contest.id_winner]"},
     )
     ratings: list["Rating"] = Relationship(back_populates="judoka_rel")
+    rating_changes: list["RatingChange"] = Relationship(
+        back_populates="judoka_rel",
+        sa_relationship_kwargs={"foreign_keys": "[RatingChange.id_judoka]"},
+    )
 
 
 class JudokaPublic(JudokaBase):
@@ -275,6 +251,7 @@ class Contest(ContestBase, table=True):
         back_populates="contests_as_winner",
         sa_relationship_kwargs={"foreign_keys": "[Contest.id_winner]"},
     )
+    rating_changes: list["RatingChange"] = Relationship(back_populates="contest_rel")
 
 
 class ContestPublic(ContestBase):
@@ -326,6 +303,7 @@ class RatingBase(SQLModel):
     id_weight: int | None = Field(default=None)
     weight: str | None = Field(default=None, max_length=50)
     formula_id: uuid.UUID | None = Field(default=None, foreign_key="rating_formula.id")
+    rating_value: float | None = Field(default=None)
 
 
 class Rating(RatingBase, table=True):
@@ -336,8 +314,38 @@ class Rating(RatingBase, table=True):
 
 class RatingPublic(RatingBase):
     id: int
+    judoka_family_name: str | None = None
+    judoka_given_name: str | None = None
 
 
 class RatingsPublic(SQLModel):
     data: list[RatingPublic]
+    count: int
+
+
+class RatingChangeBase(SQLModel):
+    id_judoka: int | None = Field(default=None, foreign_key="judoka.id")
+    id_contest: int | None = Field(default=None, foreign_key="contest.id")
+    id_opponent: int | None = Field(default=None, foreign_key="judoka.id")
+    opponent_rating_at_match: float | None = Field(default=None)
+    rating_change: float | None = Field(default=None)
+    opponent_rating_change: float | None = Field(default=None)
+
+
+class RatingChange(RatingChangeBase, table=True):
+    __tablename__ = "rating_change"
+    id: int = Field(primary_key=True)
+    judoka_rel: Judoka | None = Relationship(
+        back_populates="rating_changes",
+        sa_relationship_kwargs={"foreign_keys": "[RatingChange.id_judoka]"},
+    )
+    contest_rel: Contest | None = Relationship(back_populates="rating_changes")
+
+
+class RatingChangePublic(RatingChangeBase):
+    id: int
+
+
+class RatingChangesPublic(SQLModel):
+    data: list[RatingChangePublic]
     count: int

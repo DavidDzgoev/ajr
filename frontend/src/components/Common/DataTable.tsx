@@ -3,6 +3,8 @@ import {
   flexRender,
   getCoreRowModel,
   getPaginationRowModel,
+  type PaginationState,
+  type Updater,
   useReactTable,
 } from "@tanstack/react-table"
 import {
@@ -32,18 +34,48 @@ import {
 interface DataTableProps<TData, TValue> {
   columns: ColumnDef<TData, TValue>[]
   data: TData[]
+  serverPagination?: {
+    pagination: PaginationState
+    rowCount: number
+    onPaginationChange: (updater: Updater<PaginationState>) => void
+  }
 }
 
 export function DataTable<TData, TValue>({
   columns,
   data,
+  serverPagination,
 }: DataTableProps<TData, TValue>) {
+  const isServerPagination = Boolean(serverPagination)
+  const server = serverPagination
+
   const table = useReactTable({
     data,
     columns,
+    ...(isServerPagination
+      ? {
+          manualPagination: true,
+          rowCount: server?.rowCount ?? 0,
+          state: {
+            pagination: server?.pagination ?? { pageIndex: 0, pageSize: 25 },
+          },
+          onPaginationChange: server?.onPaginationChange ?? (() => undefined),
+        }
+      : {
+          getPaginationRowModel: getPaginationRowModel(),
+        }),
     getCoreRowModel: getCoreRowModel(),
-    getPaginationRowModel: getPaginationRowModel(),
   })
+
+  const pagination = table.getState().pagination
+  const totalRows = isServerPagination ? (server?.rowCount ?? 0) : data.length
+  const from =
+    totalRows > 0 ? pagination.pageIndex * pagination.pageSize + 1 : 0
+  const to = Math.min(
+    (pagination.pageIndex + 1) * pagination.pageSize,
+    totalRows,
+  )
+  const pageCount = table.getPageCount()
 
   return (
     <div className="flex flex-col gap-4">
@@ -90,39 +122,27 @@ export function DataTable<TData, TValue>({
         </TableBody>
       </Table>
 
-      {table.getPageCount() > 1 && (
+      {pageCount > 1 && (
         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 p-4 border-t bg-muted/20">
           <div className="flex flex-col sm:flex-row sm:items-center gap-4">
             <div className="text-sm text-muted-foreground">
-              Showing{" "}
-              {table.getState().pagination.pageIndex *
-                table.getState().pagination.pageSize +
-                1}{" "}
-              to{" "}
-              {Math.min(
-                (table.getState().pagination.pageIndex + 1) *
-                  table.getState().pagination.pageSize,
-                data.length,
-              )}{" "}
-              of{" "}
-              <span className="font-medium text-foreground">{data.length}</span>{" "}
+              Showing {from} to {to} of{" "}
+              <span className="font-medium text-foreground">{totalRows}</span>{" "}
               entries
             </div>
             <div className="flex items-center gap-x-2">
               <p className="text-sm text-muted-foreground">Rows per page</p>
               <Select
-                value={`${table.getState().pagination.pageSize}`}
+                value={`${pagination.pageSize}`}
                 onValueChange={(value) => {
                   table.setPageSize(Number(value))
                 }}
               >
                 <SelectTrigger className="h-8 w-[70px]">
-                  <SelectValue
-                    placeholder={table.getState().pagination.pageSize}
-                  />
+                  <SelectValue placeholder={pagination.pageSize} />
                 </SelectTrigger>
                 <SelectContent side="top">
-                  {[5, 10, 25, 50].map((pageSize) => (
+                  {[10, 25, 50, 100].map((pageSize) => (
                     <SelectItem key={pageSize} value={`${pageSize}`}>
                       {pageSize}
                     </SelectItem>
@@ -136,12 +156,10 @@ export function DataTable<TData, TValue>({
             <div className="flex items-center gap-x-1 text-sm text-muted-foreground">
               <span>Page</span>
               <span className="font-medium text-foreground">
-                {table.getState().pagination.pageIndex + 1}
+                {pagination.pageIndex + 1}
               </span>
               <span>of</span>
-              <span className="font-medium text-foreground">
-                {table.getPageCount()}
-              </span>
+              <span className="font-medium text-foreground">{pageCount}</span>
             </div>
 
             <div className="flex items-center gap-x-1">

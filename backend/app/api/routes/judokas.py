@@ -33,9 +33,7 @@ def read_judokas(
 
 
 @router.get("/{judoka_id}", response_model=JudokaPublic)
-def read_judoka(
-    judoka_id: int, session: SessionDep, current_user: CurrentUser
-) -> Any:
+def read_judoka(judoka_id: int, session: SessionDep, current_user: CurrentUser) -> Any:
     """Get a specific judoka by id."""
     judoka = crud.get_judoka_by_id(session=session, judoka_id=judoka_id)
     if not judoka:

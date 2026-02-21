@@ -24,14 +24,14 @@ def read_contests(
     judoka_id: int | None = None,
 ) -> Any:
     """Retrieve contests."""
-    contests = crud.get_contests(
+    contests, count = crud.get_contests(
         session=session,
         skip=skip,
         limit=limit,
         competition_id=competition_id,
         judoka_id=judoka_id,
     )
-    return ContestsPublic(data=contests, count=len(contests))
+    return ContestsPublic(data=contests, count=count)
 
 
 @router.get("/{contest_id}", response_model=ContestPublic)

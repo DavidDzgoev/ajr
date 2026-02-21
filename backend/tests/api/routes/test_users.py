@@ -1,4 +1,5 @@
 import uuid
+from datetime import datetime, timezone
 from unittest.mock import patch
 
 from fastapi.testclient import TestClient
@@ -7,7 +8,7 @@ from sqlmodel import Session, select
 from app import crud
 from app.core.config import settings
 from app.core.security import verify_password
-from app.models import User, UserCreate
+from app.models import DataSync, User, UserCreate
 from tests.utils.utils import random_email, random_lower_string
 
 
@@ -318,6 +319,38 @@ def test_register_user_already_exists_error(client: TestClient) -> None:
     )
     assert r.status_code == 400
     assert r.json()["detail"] == "The user with this email already exists in the system"
+
+
+def test_delete_user_with_datasync_reference_sets_created_by_null(
+    client: TestClient, superuser_token_headers: dict[str, str], db: Session
+) -> None:
+    username = random_email()
+    password = random_lower_string()
+    user_in = UserCreate(email=username, password=password)
+    user = crud.create_user(session=db, user_create=user_in)
+
+    data_sync = DataSync(
+        sync_type="full",
+        status="completed",
+        started_at=datetime.now(timezone.utc),
+        completed_at=datetime.now(timezone.utc),
+        records_processed=1,
+        records_created=1,
+        records_updated=0,
+        created_by=user.id,
+    )
+    db.add(data_sync)
+    db.commit()
+    db.refresh(data_sync)
+
+    r = client.delete(
+        f"{settings.API_V1_STR}/users/{user.id}",
+        headers=superuser_token_headers,
+    )
+    assert r.status_code == 200
+
+    db.refresh(data_sync)
+    assert data_sync.created_by is None
 
 
 def test_update_user(

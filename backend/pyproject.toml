@@ -21,11 +21,12 @@ dependencies = [
     "pydantic-settings<3.0.0,>=2.2.1",
     "sentry-sdk[fastapi]<2.0.0,>=1.40.6",
     "pyjwt<3.0.0,>=2.8.0",
-    "judobase>=1.0.1",
+    "judobase>=2.0.0",
+    "itsdangerous>=2.2.0",
 ]
 
-[project.dependency-groups.dev]
-dependencies = [
+[dependency-groups]
+dev = [
     "pytest<8.0.0,>=7.4.3",
     "mypy<2.0.0,>=1.8.0",
     "ruff<1.0.0,>=0.2.2",
@@ -41,6 +42,10 @@ build-backend = "hatchling.build"
 [tool.mypy]
 strict = true
 exclude = ["venv", ".venv", "alembic"]
+
+[[tool.mypy.overrides]]
+module = ["app.crud"]
+disable_error_code = ["attr-defined"]
 
 [tool.ruff]
 target-version = "py310"

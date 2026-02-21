@@ -113,6 +113,7 @@ class GlickoCalculator(RatingCalculator):
         initial_rd: float = 350.0,
         initial_volatility: float = 0.06,
         tau: float = 0.5,
+        epsilon: float = 1e-6,
     ) -> None:
         """
         Initialize Glicko-2 calculator.
@@ -122,15 +123,37 @@ class GlickoCalculator(RatingCalculator):
             initial_rd: Initial rating deviation (default: 350).
             initial_volatility: Initial volatility (default: 0.06).
             tau: System constant (default: 0.5).
+            epsilon: Convergence tolerance for volatility iteration.
         """
         self.initial_rating = initial_rating
         self.initial_rd = initial_rd
         self.initial_volatility = initial_volatility
         self.tau = tau
+        self.epsilon = epsilon
 
-    def g(self, rd: float) -> float:
-        """Calculate g(RD) function."""
-        return 1.0 / math.sqrt(1.0 + 3.0 * (rd**2) / (math.pi**2))
+    @staticmethod
+    def _scale_down_rating(rating: float) -> float:
+        """Convert rating from Glicko scale to Glicko-2 scale."""
+        return (rating - 1500.0) / 173.7178
+
+    @staticmethod
+    def _scale_up_rating(mu: float) -> float:
+        """Convert rating from Glicko-2 scale to Glicko scale."""
+        return 173.7178 * mu + 1500.0
+
+    @staticmethod
+    def _scale_down_rd(rd: float) -> float:
+        """Convert RD from Glicko scale to Glicko-2 scale."""
+        return rd / 173.7178
+
+    @staticmethod
+    def _scale_up_rd(phi: float) -> float:
+        """Convert RD from Glicko-2 scale to Glicko scale."""
+        return 173.7178 * phi
+
+    def g(self, phi: float) -> float:
+        """Calculate g(phi) function for RD on Glicko-2 scale."""
+        return 1.0 / math.sqrt(1.0 + (3.0 * phi**2) / (math.pi**2))
 
     def expected_score(
         self, player_rating: float, opponent_rating: float, opponent_rd: float
@@ -146,8 +169,63 @@ class GlickoCalculator(RatingCalculator):
         Returns:
             Expected score (0.0 to 1.0).
         """
-        g_rd = self.g(opponent_rd)
-        return 1.0 / (1.0 + math.exp(-g_rd * (player_rating - opponent_rating)))
+        mu = self._scale_down_rating(player_rating)
+        mu_opponent = self._scale_down_rating(opponent_rating)
+        phi_opponent = self._scale_down_rd(opponent_rd)
+        g_phi = self.g(phi_opponent)
+        return 1.0 / (1.0 + math.exp(-g_phi * (mu - mu_opponent)))
+
+    def _calculate_new_volatility(
+        self, phi: float, delta: float, v: float, sigma: float
+    ) -> float:
+        """
+        Calculate updated volatility using the iterative Glicko-2 algorithm.
+
+        Args:
+            phi: Current player RD on Glicko-2 scale.
+            delta: Estimated improvement (Glicko-2 scale).
+            v: Estimated variance.
+            sigma: Current volatility.
+
+        Returns:
+            Updated volatility.
+        """
+
+        a = math.log(sigma**2)
+        tau_sq = self.tau**2
+
+        def f(x: float) -> float:
+            exp_x = math.exp(x)
+            num = exp_x * (delta**2 - phi**2 - v - exp_x)
+            den = 2.0 * (phi**2 + v + exp_x) ** 2
+            return (num / den) - ((x - a) / tau_sq)
+
+        a_bound = a
+        if delta**2 > phi**2 + v:
+            b_bound = math.log(delta**2 - phi**2 - v)
+        else:
+            k = 1
+            while f(a - k * self.tau) < 0:
+                k += 1
+            b_bound = a - k * self.tau
+
+        f_a = f(a_bound)
+        f_b = f(b_bound)
+
+        while abs(b_bound - a_bound) > self.epsilon:
+            c_bound = a_bound + ((a_bound - b_bound) * f_a / (f_b - f_a))
+            f_c = f(c_bound)
+
+            if f_c * f_b < 0:
+                a_bound = b_bound
+                f_a = f_b
+            else:
+                f_a /= 2.0
+
+            b_bound = c_bound
+            f_b = f_c
+
+        return math.exp(a_bound / 2.0)
 
     def calculate_rating_change(
         self,
@@ -182,31 +260,34 @@ class GlickoCalculator(RatingCalculator):
             player_volatility = self.initial_volatility
 
         # Step 1: Convert rating and RD to Glicko-2 scale
-        mu = (player_rating - 1500.0) / 173.7178
-        phi = player_rd / 173.7178
+        mu = self._scale_down_rating(player_rating)
+        phi = self._scale_down_rd(player_rd)
+        mu_opponent = self._scale_down_rating(opponent_rating)
+        phi_opponent = self._scale_down_rd(opponent_rd)
 
         # Step 2: Calculate v (variance)
-        g_opponent_rd = self.g(opponent_rd)
-        expected = self.expected_score(player_rating, opponent_rating, opponent_rd)
-        v = 1.0 / (g_opponent_rd**2 * expected * (1.0 - expected))
+        g_opponent = self.g(phi_opponent)
+        expected = 1.0 / (1.0 + math.exp(-g_opponent * (mu - mu_opponent)))
+        v = 1.0 / (g_opponent**2 * expected * (1.0 - expected))
 
         # Step 3: Calculate delta
-        delta = v * g_opponent_rd * (result - expected)
+        delta = v * g_opponent * (result - expected)
 
-        # Step 4: Update volatility (simplified version)
-        # Full Glicko-2 uses iterative method, but we'll use a simplified approach
-        new_volatility = player_volatility  # In full implementation, this would be calculated
+        # Step 4: Update volatility (iterative Glicko-2 algorithm)
+        new_volatility = self._calculate_new_volatility(
+            phi=phi, delta=delta, v=v, sigma=player_volatility
+        )
 
         # Step 5: Update phi (RD)
         phi_star = math.sqrt(phi**2 + new_volatility**2)
         new_phi = 1.0 / math.sqrt(1.0 / phi_star**2 + 1.0 / v)
 
         # Step 6: Update mu (rating)
-        new_mu = mu + new_phi**2 * g_opponent_rd * (result - expected)
+        new_mu = mu + new_phi**2 * g_opponent * (result - expected)
 
         # Step 7: Convert back to Glicko scale
-        new_rating = 173.7178 * new_mu + 1500.0
-        new_rd = 173.7178 * new_phi
+        new_rating = self._scale_up_rating(new_mu)
+        new_rd = self._scale_up_rd(new_phi)
 
         rating_change = new_rating - player_rating
 
@@ -249,11 +330,13 @@ def get_calculator(formula_type: str, config: dict[str, Any]) -> RatingCalculato
         initial_rd = config.get("initial_rd", 350.0)
         initial_volatility = config.get("initial_volatility", 0.06)
         tau = config.get("tau", 0.5)
+        epsilon = config.get("epsilon", 1e-6)
         return GlickoCalculator(
             initial_rating=initial_rating,
             initial_rd=initial_rd,
             initial_volatility=initial_volatility,
             tau=tau,
+            epsilon=epsilon,
         )
     else:
         raise ValueError(f"Unsupported formula type: {formula_type}")

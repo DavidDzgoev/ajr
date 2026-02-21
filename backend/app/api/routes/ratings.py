@@ -24,17 +24,23 @@ def read_ratings(
     limit: int = 100,
     formula_id: uuid.UUID | None = None,
     judoka_id: int | None = None,
+    surname: str | None = None,
+    weight: str | None = None,
+    rating_min: float | None = None,
 ) -> Any:
     """Retrieve ratings."""
-    ratings = crud.get_ratings(
+    ratings, count = crud.get_ratings(
         session=session,
         skip=skip,
         limit=limit,
         formula_id=formula_id,
         judoka_id=judoka_id,
+        surname=surname,
+        weight=weight,
+        rating_min=rating_min,
     )
 
-    return RatingsPublic(data=ratings, count=len(ratings))
+    return RatingsPublic(data=ratings, count=count)
 
 
 @router.get("/{formula_id}/leaderboard", response_model=Any)
@@ -72,9 +78,7 @@ def read_judoka_rating(
     return rating
 
 
-@router.get(
-    "/{formula_id}/judoka/{judoka_id}/history", response_model=Any
-)
+@router.get("/{formula_id}/judoka/{judoka_id}/history", response_model=Any)
 def read_rating_history(
     formula_id: uuid.UUID,
     judoka_id: int,

@@ -1,19 +1,26 @@
 """Service for synchronizing data from judobase."""
+
 import asyncio
 import logging
+from collections import defaultdict
 from datetime import UTC, datetime
 from uuid import UUID
 
-from sqlmodel import Session
+from sqlalchemy import text
+from sqlmodel import Session, select
 
 from app.models import (
     Competition,
-    DataSync,
-    Country,
     Contest,
+    Country,
+    DataSync,
     Judoka,
+    Rating,
+    RatingChange,
+    RatingFormula,
 )
 from app.services.judobase_service import JudobaseService
+from app.services.rating_calculator import RatingCalculator, get_calculator
 
 logger = logging.getLogger(__name__)
 
@@ -29,10 +36,13 @@ class SyncService:
         data_sync = self._create_data_sync_record(created_by)
 
         try:
+            self._clear_synced_data()
             async with JudobaseService() as judobase:
                 await self._download_countries(judobase, data_sync)
                 await self._download_competitions(judobase, data_sync)
                 await self._download_contests_and_judokas(judobase, data_sync)
+                await self.download_fomulas(data_sync)
+                await self._calculate_ratings()
 
             self._complete_data_sync_record(data_sync, True)
             logger.info(
@@ -42,11 +52,26 @@ class SyncService:
 
         except Exception as e:
             logger.error(f"Sync failed: {str(e)}", exc_info=True)
+            self.session.rollback()
             self._complete_data_sync_record(data_sync, False, str(e))
 
         return data_sync
 
-    async def _download_contests_and_judokas(self, judobase: JudobaseService, data_sync: DataSync) -> None:
+    def _clear_synced_data(self) -> None:
+        """Remove previously synced data before a full refresh."""
+        logger.info("Clearing previously synced data before full sync")
+        logger.info("Truncating synced tables")
+        self.session.exec(
+            text(
+                "TRUNCATE TABLE rating_change, rating, contest, competition, judoka, country "
+                "RESTART IDENTITY CASCADE"
+            )
+        )
+        self.session.commit()
+
+    async def _download_contests_and_judokas(
+        self, judobase: JudobaseService, data_sync: DataSync
+    ) -> None:
         """Download contests and judokas from judobase and store in database.
 
         Judokas are fetched and saved first. Only contests whose blue and white
@@ -93,8 +118,14 @@ class SyncService:
 
         skipped_contests = 0
         for contest in contests:
-            blue_ok = contest.id_person_blue is None or contest.id_person_blue in saved_judoka_ids
-            white_ok = contest.id_person_white is None or contest.id_person_white in saved_judoka_ids
+            blue_ok = (
+                contest.id_person_blue is None
+                or contest.id_person_blue in saved_judoka_ids
+            )
+            white_ok = (
+                contest.id_person_white is None
+                or contest.id_person_white in saved_judoka_ids
+            )
             if not blue_ok or not white_ok or contest.id_winner == "0":
                 skipped_contests += 1
                 continue
@@ -133,13 +164,15 @@ class SyncService:
         if skipped_contests:
             logger.info("Skipped %d contests (missing judoka)", skipped_contests)
 
-    async def _download_countries(self, judobase: JudobaseService, data_sync: DataSync) -> None:
+    async def _download_countries(
+        self, judobase: JudobaseService, data_sync: DataSync
+    ) -> None:
         """Download countries from judobase and store in database."""
         logger.info("Downloading countries")
         countries = await judobase.get_all_countries()
 
         for country in countries:
-            country_record =Country(
+            country_record = Country(
                 id=country.id_country,
                 name=country.name,
                 ioc=country.ioc,
@@ -147,13 +180,15 @@ class SyncService:
             self.session.add(country_record)
             data_sync.records_created += 1
 
-    async def _download_competitions(self, judobase: JudobaseService, data_sync: DataSync) -> None:
+    async def _download_competitions(
+        self, judobase: JudobaseService, data_sync: DataSync
+    ) -> None:
         """Download competitions from judobase and store in database."""
         logger.info("Downloading competitions")
         competitions = await judobase.get_all_competitions()
 
         for competition in competitions:
-            competition_record =Competition(
+            competition_record = Competition(
                 id=competition.id_competition,
                 date_from=competition.date_from,
                 date_to=competition.date_to,
@@ -167,7 +202,215 @@ class SyncService:
             self.session.add(competition_record)
             data_sync.records_created += 1
 
+    async def download_fomulas(self, data_sync: DataSync) -> None:
+        """Ensure built-in rating formulas exist in the database."""
+        logger.info("Ensuring built-in rating formulas")
 
+        defaults = (
+            (
+                "elo",
+                (
+                    "Classic Elo rating system with expected-score updates. "
+                    "Good baseline formula for one-on-one matchups."
+                ),
+            ),
+            (
+                "glicko",
+                (
+                    "Glicko-2 rating system that tracks rating deviation and "
+                    "volatility to model confidence and performance swings."
+                ),
+            ),
+        )
+
+        existing = {
+            formula.name.strip().lower(): formula
+            for formula in self.session.exec(select(RatingFormula)).all()
+        }
+
+        for name, description in defaults:
+            db_formula = existing.get(name)
+            if db_formula is None:
+                self.session.add(
+                    RatingFormula(
+                        name=name,
+                        description=description,
+                        is_active=True,
+                    )
+                )
+                data_sync.records_created += 1
+                continue
+
+            updated = False
+            if db_formula.description != description:
+                db_formula.description = description
+                updated = True
+            if not db_formula.is_active:
+                db_formula.is_active = True
+                updated = True
+
+            if updated:
+                self.session.add(db_formula)
+                data_sync.records_updated += 1
+
+    @staticmethod
+    def _resolve_formula_type(name: str) -> str | None:
+        """Map formula DB name to calculator type."""
+        normalized = name.strip().lower()
+        if normalized == "elo":
+            return "elo"
+        if normalized == "glicko":
+            return "glicko"
+        return None
+
+    async def _calculate_ratings(self) -> None:
+        """Calculate ratings for all active formulas from the database."""
+        logger.info("Calculating ratings")
+
+        formulas = list(
+            self.session.exec(
+                select(RatingFormula)
+                .where(RatingFormula.is_active.is_(True))
+                .order_by(RatingFormula.name.asc())
+            ).all()
+        )
+        if not formulas:
+            logger.warning("No active rating formulas found, skipping rating calculation")
+            return
+
+        stmt = (
+            select(Contest)
+            .join(Competition, Contest.id_competition == Competition.id)
+            .order_by(
+                Competition.date_from.asc().nullslast(),
+                Contest.fight_no.asc().nullslast(),
+                Contest.id.asc(),
+            )
+        )
+        contests = list(self.session.exec(stmt).all())
+
+        calculators: list[tuple[RatingFormula, str, RatingCalculator]] = []
+        for formula in formulas:
+            formula_type = self._resolve_formula_type(formula.name)
+            if formula_type is None:
+                logger.warning(
+                    "Skipping unsupported formula '%s' (id=%s)",
+                    formula.name,
+                    formula.id,
+                )
+                continue
+            calculators.append((formula, formula_type, get_calculator(formula_type, {})))
+
+        if not calculators:
+            logger.warning("No supported active formulas found, skipping rating calculation")
+            return
+
+        primary_formula = next(
+            (formula for formula, formula_type, _ in calculators if formula_type == "elo"),
+            calculators[0][0],
+        )
+
+        for formula, _, calculator in calculators:
+            initial_state = calculator.get_initial_rating()
+            current_states: dict[int, dict[str | None, dict[str, float]]] = defaultdict(
+                dict
+            )
+
+            for contest in contests:
+                blue_id = contest.id_judoka_blue
+                white_id = contest.id_judoka_white
+                if blue_id is None or white_id is None:
+                    continue
+
+                weight = contest.weight
+                blue_state = current_states[blue_id].get(weight, initial_state.copy())
+                white_state = current_states[white_id].get(weight, initial_state.copy())
+
+                winner = contest.id_winner
+                if winner == blue_id:
+                    res_blue, res_white = 1.0, 0.0
+                elif winner == white_id:
+                    res_blue, res_white = 0.0, 1.0
+                else:
+                    res_blue, res_white = 0.5, 0.5
+
+                blue_kwargs: dict[str, float] = {}
+                white_kwargs: dict[str, float] = {}
+                if "rating_deviation" in blue_state:
+                    blue_kwargs["player_rd"] = blue_state["rating_deviation"]
+                if "rating_deviation" in white_state:
+                    blue_kwargs["opponent_rd"] = white_state["rating_deviation"]
+                if "volatility" in blue_state:
+                    blue_kwargs["player_volatility"] = blue_state["volatility"]
+
+                if "rating_deviation" in white_state:
+                    white_kwargs["player_rd"] = white_state["rating_deviation"]
+                if "rating_deviation" in blue_state:
+                    white_kwargs["opponent_rd"] = blue_state["rating_deviation"]
+                if "volatility" in white_state:
+                    white_kwargs["player_volatility"] = white_state["volatility"]
+
+                out_blue = calculator.calculate_rating_change(
+                    blue_state["rating"],
+                    white_state["rating"],
+                    res_blue,
+                    **blue_kwargs,
+                )
+                out_white = calculator.calculate_rating_change(
+                    white_state["rating"],
+                    blue_state["rating"],
+                    res_white,
+                    **white_kwargs,
+                )
+
+                new_blue_state = blue_state.copy()
+                new_white_state = white_state.copy()
+                for key in ("rating", "rating_deviation", "volatility"):
+                    if key in out_blue:
+                        new_blue_state[key] = out_blue[key]
+                    if key in out_white:
+                        new_white_state[key] = out_white[key]
+
+                current_states[blue_id][weight] = new_blue_state
+                current_states[white_id][weight] = new_white_state
+
+                if formula.id == primary_formula.id:
+                    contest.rating_change_b = round(out_blue["rating_change"])
+                    contest.rating_change_w = round(out_white["rating_change"])
+
+                    self.session.add(
+                        RatingChange(
+                            id_judoka=blue_id,
+                            id_contest=contest.id,
+                            id_opponent=white_id,
+                            opponent_rating_at_match=white_state["rating"],
+                            rating_change=out_blue["rating_change"],
+                            opponent_rating_change=out_white["rating_change"],
+                        )
+                    )
+                    self.session.add(
+                        RatingChange(
+                            id_judoka=white_id,
+                            id_contest=contest.id,
+                            id_opponent=blue_id,
+                            opponent_rating_at_match=blue_state["rating"],
+                            rating_change=out_white["rating_change"],
+                            opponent_rating_change=out_blue["rating_change"],
+                        )
+                    )
+
+            for judoka_id, by_weight in current_states.items():
+                for weight, state in by_weight.items():
+                    self.session.add(
+                        Rating(
+                            id_judoka=judoka_id,
+                            weight=weight,
+                            formula_id=formula.id,
+                            rating_value=state["rating"],
+                        )
+                    )
+
+        self.session.add_all(contests)
 
     def _create_data_sync_record(self, created_by: UUID | None) -> DataSync:
         """Create a new DataSync record."""
@@ -182,7 +425,9 @@ class SyncService:
         self.session.refresh(data_sync)
         return data_sync
 
-    def _complete_data_sync_record(self, data_sync: DataSync, success: bool, error_message: str | None = None) -> None:
+    def _complete_data_sync_record(
+        self, data_sync: DataSync, success: bool, error_message: str | None = None
+    ) -> None:
         """Complete the DataSync record with status."""
         data_sync.completed_at = datetime.now(UTC)
         data_sync.status = "completed" if success else "failed"
